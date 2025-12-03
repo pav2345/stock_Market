@@ -1,0 +1,13 @@
+Flask
+Flask-CORS
+pandas
+numpy
+yfinance
+influxdb-client
+scikit-learn
+tensorflow
+prophet
+statsmodels
+ta
+matplotlib
+joblib
