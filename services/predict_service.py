@@ -8,7 +8,6 @@ from tensorflow.keras.models import Sequential  # type: ignore
 from tensorflow.keras.layers import LSTM, Dense  # type: ignore
 
 
-# ------------------------- ARIMA -------------------------
 def arima_forecast(df, periods=7):
     df = df.copy()
     series = df["close"]
@@ -25,7 +24,6 @@ def arima_forecast(df, periods=7):
 
 
 
-# ------------------------- PROPHET -------------------------
 def prophet_forecast(df, periods=30):
     df = df.copy()
 
@@ -59,7 +57,6 @@ def prophet_forecast(df, periods=30):
 
 
 
-# ------------------------- SIMPLE MOVING AVERAGE -------------------------
 def sma_predict(df, window=7):
     df = df.copy()
     close_series = df["close"]
@@ -72,7 +69,6 @@ def sma_predict(df, window=7):
 
 
 
-# ------------------------- LINEAR REGRESSION -------------------------
 def linear_regression_predict(df):
     df = df.copy()
     df["index"] = np.arange(len(df))
@@ -90,7 +86,6 @@ def linear_regression_predict(df):
 
 
 
-# ------------------------- LSTM MODEL -------------------------
 def lstm_forecast(df, look_back=60):
     df = df.copy()
 

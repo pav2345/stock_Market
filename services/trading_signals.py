@@ -3,41 +3,40 @@ def generate_trading_signals(df):
     last = df.iloc[-1]
 
     reasons = []
-    score = 0  # confidence score out of 100
+    score = 0
 
-    # ---------------- RSI ----------------
-    if last["rsi"] < 30:
+    
+    if last["RSI"] < 30:
         reasons.append("RSI indicates oversold → BUY")
         score += 30
-    elif last["rsi"] > 70:
+    elif last["RSI"] > 70:
         reasons.append("RSI indicates overbought → SELL")
         score += 30
 
-    # ---------------- MACD CROSSOVER ----------------
-    if last["macd"] > last["signal"]:
+    
+    if last["MACD"] > last["Signal"]:
         reasons.append("MACD crossed above Signal → BUY trend")
         score += 25
     else:
         reasons.append("MACD below Signal → SELL trend")
         score += 25
 
-    # ---------------- EMA CROSSOVER ----------------
-    if last["ema20"] > last["ema50"]:
-        reasons.append("EMA20 crossed above EMA50 → Uptrend (BUY)")
+    if last["EMA20"] > last["EMA50"]:
+        reasons.append("EMA20 above EMA50 → Uptrend (BUY)")
         score += 20
     else:
         reasons.append("EMA20 below EMA50 → Downtrend (SELL)")
         score += 20
 
-    # ---------------- BOLLINGER BANDS ----------------
-    if last["close"] < last["lower_bb"]:
-        reasons.append("Price below Lower Bollinger Band → BUY bounce")
+
+    if last["close"] < last["Lower_BB"]:
+        reasons.append("Price below Lower BB → BUY bounce")
         score += 15
-    elif last["close"] > last["upper_bb"]:
-        reasons.append("Price above Upper Bollinger Band → SELL pullback")
+    elif last["close"] > last["Upper_BB"]:
+        reasons.append("Price above Upper BB → SELL pullback")
         score += 15
 
-    # ------------ Final Signal Decision ------------
+   
     if score >= 70:
         final_signal = "BUY"
     elif score <= 40:

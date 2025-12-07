@@ -7,18 +7,29 @@ def fetch_stock_data(symbol, period="6mo", interval="1d"):
     if df is None or df.empty:
         return None
 
+    if isinstance(df.columns, pd.MultiIndex):
+        df.columns = ['_'.join(col).strip() for col in df.columns.values]
+
+    new_cols = {}
+    for col in df.columns:
+        lc = col.lower()
+        if "open" in lc and "adj" not in lc:
+            new_cols[col] = "open"
+        elif "high" in lc:
+            new_cols[col] = "high"
+        elif "low" in lc:
+            new_cols[col] = "low"
+        elif "close" in lc and "adj" not in lc:
+            new_cols[col] = "close"
+        elif "adj" in lc:
+            new_cols[col] = "adjclose"
+        elif "volume" in lc:
+            new_cols[col] = "volume"
+
+    df.rename(columns=new_cols, inplace=True)
     df = df.reset_index()
 
-    df.rename(columns={
-        "Date": "Date",
-        "Open": "open",
-        "High": "high",
-        "Low": "low",
-        "Close": "close",
-        "Adj Close": "adjclose",
-        "Volume": "volume"
-    }, inplace=True)
-
-    df["Date"] = pd.to_datetime(df["Date"])
+    if "Date" in df.columns:
+        df["Date"] = pd.to_datetime(df["Date"]).dt.tz_localize(None)
 
     return df

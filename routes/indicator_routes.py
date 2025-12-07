@@ -1,12 +1,16 @@
 from flask import Blueprint, request, jsonify
 from services.data_fetcher import fetch_stock_data
-from services.indicator_service import calculate_indicators
-from services.trading_signals import generate_trading_signals # type: ignore
+from services.indicator_service import calculate_indicators, add_indicators_to_df
+from services.trading_signals import generate_trading_signals
+from services.indicator_service import add_indicators_to_df
 
 indicator_bp = Blueprint("indicator", __name__)
 
-@indicator_bp.route("/indicators/basic", methods=["POST"])
+@indicator_bp.route("/indicators/basic", methods=["POST", "OPTIONS"])
 def indicators_basic():
+    if request.method == "OPTIONS":
+        return jsonify({"status": "ok"}), 200
+
     try:
         symbol = request.json.get("symbol")
 
@@ -30,43 +34,47 @@ def indicators_basic():
     except Exception as e:
         return {"error": str(e)}, 500
 
-@indicator_bp.route("/indicators/signals", methods=["POST"])
+
+@indicator_bp.route("/indicators/signals", methods=["POST", "OPTIONS"])
 def indicator_signals():
+    # CORS Preflight
+    if request.method == "OPTIONS":
+        return jsonify({"status": "ok"}), 200
+
     try:
+        from services.indicator_service import add_indicators_to_df  # ✅ FIXED IMPORT
+
         body = request.get_json()
         symbol = body.get("symbol")
 
+        if not symbol:
+            return {"error": "symbol is required"}, 400
+
+        # Fetch stock data
         df = fetch_stock_data(symbol)
         if df is None or df.empty:
             return {"error": "No data found"}, 404
 
-        from services.indicator_service import calculate_indicators
+        # Add TA indicators safely
+        df = add_indicators_to_df(df)
 
-        # Calculate indicators for entire DataFrame
-        full_indicators = calculate_indicators(df)
-
-        # Attach indicators back into DF for signal generation
-        df["SMA20"] = df["close"].rolling(20).mean()
-        df["SMA50"] = df["close"].rolling(50).mean()
-        df["EMA20"] = df["close"].ewm(span=20, adjust=False).mean()
-        df["EMA50"] = df["close"].ewm(span=50, adjust=False).mean()
-
-        delta = df["close"].diff()
-        gain = delta.clip(lower=0)
-        loss = -delta.clip(upper=0)
-        df["RSI"] = 100 - (100 / (1 + (gain.rolling(14).mean() / loss.rolling(14).mean())))
-
-        ema12 = df["close"].ewm(span=12, adjust=False).mean()
-        ema26 = df["close"].ewm(span=26, adjust=False).mean()
-        df["MACD"] = ema12 - ema26
-        df["Signal"] = df["MACD"].ewm(span=9, adjust=False).mean()
-
-        df["MB"] = df["close"].rolling(20).mean()
-        df["Upper_BB"] = df["MB"] + 2 * df["close"].rolling(20).std()
-        df["Lower_BB"] = df["MB"] - 2 * df["close"].rolling(20).std()
-
-        # Generate final buy/sell decision
+        # Generate final signal
         signal_result = generate_trading_signals(df)
+
+        latest = df.iloc[-1]
+
+        latest_indicators = {
+            "SMA20": latest.get("SMA20"),
+            "SMA50": latest.get("SMA50"),
+            "EMA20": latest.get("EMA20"),
+            "EMA50": latest.get("EMA50"),
+            "RSI": latest.get("RSI"),
+            "MACD": latest.get("MACD"),
+            "Signal": latest.get("Signal"),
+            "Upper_BB": latest.get("Upper_BB"),
+            "Lower_BB": latest.get("Lower_BB"),
+            "MB": latest.get("MB"),
+        }
 
         return {
             "status": "success",
@@ -74,7 +82,7 @@ def indicator_signals():
             "signal": signal_result["signal"],
             "confidence": signal_result["confidence"],
             "reasons": signal_result["reasons"],
-            "latest_indicators": full_indicators
+            "latest_indicators": latest_indicators
         }
 
     except Exception as e:

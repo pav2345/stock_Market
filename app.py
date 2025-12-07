@@ -11,6 +11,9 @@ from routes.sentiment_routes import sentiment_bp
 app = Flask(__name__)
 CORS(app)
 
+
+app.config["PROPAGATE_EXCEPTIONS"] = True
+
 # Register routes
 app.register_blueprint(predict_bp)
 app.register_blueprint(indicator_bp)
@@ -20,9 +23,11 @@ app.register_blueprint(sentiment_bp)
 
 
 
+
 @app.route("/")
 def home():
     return {"status": "Backend Running"}
 
 if __name__ == "__main__":
-    app.run(debug=True, port=5000)
+    app.run(debug=True, port=8000)
+
